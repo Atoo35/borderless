@@ -36,6 +36,9 @@ async function extractDates (imageBuffer) {
         if (dob && dob > new Date()) {
             throw new Error('Invalid date of birth');
         }
+        if (doe && doe < new Date()) {
+            throw new Error('Passport expired');
+        }
         return {
             birthDate: dob && dob.toLocaleDateString('en-GB', {
                 day: 'numeric', month: 'short', year: 'numeric'
@@ -56,6 +59,7 @@ app.post('/extract', upload.single('image'), async (req, res) => {
         const { birthDate, expiryDate } = await extractDates(buffer);
         res.json({ birthDate, expiryDate });
     } catch (error) {
+        console.log(`Error in extracting dates: ${error.message}`);
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
