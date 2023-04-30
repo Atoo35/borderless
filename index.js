@@ -11,8 +11,45 @@ const app = express();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+const extractDates = (textAnnotations) => {
+    let dob = null;
+    let doe = null;
+    for (let i = 0; i < textAnnotations.length; i++) {
+        if (dob && doe) {
+            break;
+        }
+        if ((textAnnotations[i].match(/date of birth/i) || (textAnnotations[i].match(/birth date/i))) && !dob) {
+            if (textAnnotations[i + 1]) {
+                dob = new Date(textAnnotations[i + 1].trim())
+            }
+        }
+        if ((textAnnotations[i].match(/date of expiry/i) || textAnnotations[i].match(/expiry date/i)) && !doe) {
+            if (textAnnotations[i + 1]) {
+                doe = new Date(textAnnotations[i + 1].trim())
+            }
+        }
+    }
+    if ([dob, doe].some(date => date == "Invalid Date")) {
+        throw new Error("Couldn't extract dates");
+    }
+    if (dob && dob > new Date()) {
+        throw new Error('Invalid date of birth');
+    }
+    // NOTE: Uncomment this if you want to check for passport expiry
+    // if (doe && doe < new Date()) {
+    //     throw new Error('Passport expired');
+    // }
+    return {
+        birthDate: dob && dob.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        }),
+        expiryDate: doe && doe.toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        })
+    };
+};
 
-async function extractDates (imageBuffer) {
+async function readOCR (imageBuffer) {
     const [result] = await client.textDetection(imageBuffer)
     if (result.error) {
         console.log(`Error in OCR: ${result.error}`)
@@ -20,33 +57,12 @@ async function extractDates (imageBuffer) {
     }
     if (result.fullTextAnnotation) {
         const textAnnotations = result.fullTextAnnotation.text.split('\n');
-        let dob = null;
-        let doe = null;
-        for (let i = 0; i < textAnnotations.length; i++) {
-            if (dob && doe) {
-                break;
-            }
-            if ((textAnnotations[i].match(/date of birth/i) || (textAnnotations[i].match(/birth date/i))) && !dob) {
-                dob = new Date(textAnnotations[i + 1].trim())
-            }
-            if ((textAnnotations[i].match(/date of expiry/i) || textAnnotations[i].match(/expiry date/i)) && !doe) {
-                doe = new Date(textAnnotations[i + 1].trim())
-            }
+        const { birthDate, expiryDate } = extractDates(textAnnotations);
+        if (!birthDate || !expiryDate) {
+            console.log('No dates found while extracting dates from text annotations')
+            throw new Error('No dates found');
         }
-        if (dob && dob > new Date()) {
-            throw new Error('Invalid date of birth');
-        }
-        if (doe && doe < new Date()) {
-            throw new Error('Passport expired');
-        }
-        return {
-            birthDate: dob && dob.toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric'
-            }),
-            expiryDate: doe && doe.toLocaleDateString('en-GB', {
-                day: 'numeric', month: 'short', year: 'numeric'
-            })
-        };
+        return { birthDate, expiryDate };
     } else {
         console.log('No text found while getting response from google cloud vision')
         throw new Error('No text found');
@@ -56,7 +72,7 @@ async function extractDates (imageBuffer) {
 app.post('/extract', upload.single('image'), async (req, res) => {
     try {
         const { buffer } = req.file;
-        const { birthDate, expiryDate } = await extractDates(buffer);
+        const { birthDate, expiryDate } = await readOCR(buffer);
         res.json({ birthDate, expiryDate });
     } catch (error) {
         console.log(`Error in extracting dates: ${error.message}`);
@@ -65,3 +81,4 @@ app.post('/extract', upload.single('image'), async (req, res) => {
 });
 
 app.listen(3000, () => console.log('Server listening on port 3000'));
+

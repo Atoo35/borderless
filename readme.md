@@ -7,14 +7,21 @@
 3. Run `npm start` to start the application
 4. Make a post request to `http://localhost:3000/extract` with adding the image file as a form-data with the key `image`
 
+> Alternatively use the below cURL command to make the request
+
+```bash
+curl --location 'http://localhost:3000/extract' \
+--form 'image=@"<absolute path to the image>"'
+```
+
 ## Responses
 
 1. image4.jpeg
 
 ```
 {
-    "birthDate": null,
-    "expiryDate": "2007-01-14T00:00:00.000Z"
+    "message": "Internal server error",
+    "error": "Couldn't extract dates"
 }
 ```
 
@@ -22,17 +29,17 @@
 
 ```
 {
-    "birthDate": "2007-01-01T00:00:00.000Z",
-    "expiryDate": "2023-01-14T00:00:00.000Z"
+    "birthDate": "4 Dec 1988",
+    "expiryDate": "28 Sept 2025"
 }
 ```
 
-3. image3.jpeg
+3. image2.jpeg
 
 ```
 {
-    "birthDate": "1983-05-24T23:00:00.000Z",
-    "expiryDate": "2021-10-17T23:00:00.000Z"
+    "birthDate": "25 May 1983",
+    "expiryDate": "18 Oct 2021"
 }
 ```
 
@@ -40,7 +47,7 @@
 
 ```
 {
-    "birthDate": "1993-10-13T23:00:00.000Z",
-    "expiryDate": "2015-07-15T23:00:00.000Z"
+    "birthDate": "14 Oct 1993",
+    "expiryDate": "16 Jul 2015"
 }
 ```
