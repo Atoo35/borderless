@@ -30,15 +30,22 @@ const extractDates = (textAnnotations) => {
         }
     }
     if ([dob, doe].some(date => date == "Invalid Date")) {
-        throw new Error("Couldn't extract dates");
+        console.log("Incorrect date conversion")
+        throw new Error("OCR recognized incorrect date format");
     }
     if (dob && dob > new Date()) {
-        throw new Error('Invalid date of birth');
+        console.log("Invalid date of birth, date of birth is in future")
+        throw new Error("Invalid date of birth, date of birth is in future");
     }
     // NOTE: Uncomment this if you want to check for passport expiry
     // if (doe && doe < new Date()) {
     //     throw new Error('Passport expired');
     // }
+    if (!dob || !doe) {
+        console.log('Couldn\'t extract dates properly from OCR response')
+        throw new Error('Couldn\'t extract dates');
+    }
+
     return {
         birthDate: dob && dob.toLocaleDateString('en-GB', {
             day: 'numeric', month: 'short', year: 'numeric'
@@ -81,4 +88,3 @@ app.post('/extract', upload.single('image'), async (req, res) => {
 });
 
 app.listen(3000, () => console.log('Server listening on port 3000'));
-
