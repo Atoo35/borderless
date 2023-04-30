@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const vision = require('@google-cloud/vision');
-const fs = require('fs');
 const client = new vision.ImageAnnotatorClient({
     keyFilename: './key.json'
 });
